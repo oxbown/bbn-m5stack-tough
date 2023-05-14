@@ -4,6 +4,8 @@
 //#define ENABLE_SCREEN_SERVER // This server sends screenshots via serial to processing.org sketch running on PC (not for production)
 
 #undef ENABLE_MPD
+
+#define ENABLE_OTA
 //
 //
 //  Changes to lv_conf.h (LVGL 8.x) needed:
@@ -41,6 +43,7 @@
 #include <HTTPClient.h>
 #include <Preferences.h>
 
+
 // config store.
 Preferences preferences;
 
@@ -72,6 +75,11 @@ typedef struct _NetClient {
 // Set the baud rate in it to default M5Stack as int serial_baud_rate = 115200; 
 #include "screenServer.h"
 #endif
+
+#ifdef ENABLE_OTA
+#include <ArduinoOTA.h>
+#endif
+
 
 #ifdef ENABLE_MPD // TODO:
 #include "ui_player_control.h"
@@ -260,16 +268,28 @@ void setup() {
 
   SpeakerInit();
   DingDong();
+  
+#ifdef ENABLE_OTA;
+  ArduinoOTA.setHostname("M5Tough");  //Set the network port name.
+  ArduinoOTA.setPassword("Bareboat");  //Set the network port connection password.
+  ArduinoOTA.begin();  //Initialize the OTA.
+#endif
+
 }
 
 unsigned long last_ui_upd = 0;
 
 void loop() {
   M5.update();
+
   lv_task_handler();
   app.tick();
 #if !(LV_TICK_CUSTOM)
   lv_tick_inc(1);
+#endif
+
+#ifdef ENABLE_OTA
+  ArduinoOTA.handle();
 #endif
 
   if (!settingMode) {
